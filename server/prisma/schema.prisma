@@ -1,0 +1,178 @@
+// ═══════════════════════════════════════════════════════════════════════
+// Lumin.AI — Prisma Schema
+// Database layer for the data analysis platform.
+// Provider: SQLite (zero-config local dev)
+// ═══════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── User ────────────────────────────────────────────────────────────
+// Future-ready authentication model. Owns all datasets.
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  datasets Dataset[]
+
+  @@map("users")
+}
+
+// ─── Dataset ─────────────────────────────────────────────────────────
+// Represents an uploaded file and its parsed metadata.
+// Replaces the in-memory sessions Map in index.js.
+model Dataset {
+  id        String   @id @default(uuid())
+  sessionId String   @unique         // The UUID sent to the client
+  filename  String
+  mimeType  String?
+  fileSize  Int?                      // Bytes
+  rows      Int
+  cols      Int
+  headers   String                    // JSON array of column names
+  dtypes    String                    // JSON { colName: "numeric"|"categorical"|"datetime" }
+  sampleRows String?                  // JSON array of first 5 rows
+  nullCounts String?                  // JSON { colName: count }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign keys
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Relations
+  edaResult    EdaResult?
+  stories      DataStory[]
+  chatSessions ChatSession[]
+  reports      Report[]
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("datasets")
+}
+
+// ─── EdaResult ───────────────────────────────────────────────────────
+// Persisted EDA computation output. One-to-one with Dataset.
+// Complex nested objects stored as JSON strings.
+model EdaResult {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  // Overview metrics
+  overviewRows     Int?
+  overviewCols     Int?
+  overviewMemoryKB Float?
+  overviewNullPct  Float?              // nullPercent
+  duplicateRows    Int?
+
+  // Dtype breakdown
+  numericCount     Int?
+  categoricalCount Int?
+  datetimeCount    Int?
+
+  // Column lists
+  numericCols     String?              // JSON array
+  categoricalCols String?              // JSON array
+
+  // Complex computed data (JSON blobs)
+  statistics          String?          // JSON array of stat objects
+  topCorrelations     String?          // JSON array of correlation pairs
+  missingValues       String?          // JSON array of { col, count, percent }
+  distributions       String?          // JSON object { colName: { bins, counts } }
+  categoricalFrequency String?         // JSON object { colName: freqMap }
+  correlationMatrix   String?          // JSON { columns, values }
+
+  // Foreign key
+  datasetId String  @unique
+  dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@map("eda_results")
+}
+
+// ─── DataStory ───────────────────────────────────────────────────────
+// AI-generated narrative about a dataset.
+// Multiple stories can exist per dataset (different audience/depth).
+model DataStory {
+  id        String   @id @default(uuid())
+  audience  String   @default("EXECUTIVE")   // EXECUTIVE | TECHNICAL | GENERAL
+  depth     String   @default("Standard")    // Brief | Standard | Deep Dive
+  content   String                            // Full story text
+  sections  String?                           // JSON parsed sections
+  createdAt DateTime @default(now())
+
+  // Foreign key
+  datasetId String
+  dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@index([datasetId])
+  @@index([createdAt])
+  @@map("data_stories")
+}
+
+// ─── ChatSession ─────────────────────────────────────────────────────
+// Groups a conversation thread about a specific dataset.
+model ChatSession {
+  id        String   @id @default(uuid())
+  title     String?                          // Auto-generated or user-set
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign key
+  datasetId String
+  dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  // Relations
+  messages ChatMessage[]
+
+  @@index([datasetId])
+  @@index([createdAt])
+  @@map("chat_sessions")
+}
+
+// ─── ChatMessage ─────────────────────────────────────────────────────
+// Individual message in a chat conversation.
+model ChatMessage {
+  id        String   @id @default(uuid())
+  role      String                           // "user" | "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  // Foreign key
+  chatSessionId String
+  chatSession   ChatSession @relation(fields: [chatSessionId], references: [id], onDelete: Cascade)
+
+  @@index([chatSessionId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+// ─── Report ──────────────────────────────────────────────────────────
+// Tracks generated PDF summary reports.
+model Report {
+  id            String   @id @default(uuid())
+  reportType    String   @default("EDA_SUMMARY")   // EDA_SUMMARY | custom types
+  filename      String                               // Generated PDF filename
+  qualityScore  Int?                                  // Data quality score at generation time
+  riskCount     Int?                                  // Number of risk factors found
+  findingCount  Int?                                  // Number of findings generated
+  createdAt     DateTime @default(now())
+
+  // Foreign key
+  datasetId String
+  dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@index([datasetId])
+  @@index([createdAt])
+  @@map("reports")
+}
