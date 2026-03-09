@@ -87,8 +87,8 @@ function drawLogo(doc, x, y) {
 function drawHeader(doc, filename, dateStr) {
     drawLogo(doc, ML + 5, 12)
     doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...C.s100)
-    doc.text('DATUM', ML + 12, 13.5)
-    doc.setTextColor(...C.s300); doc.text('.AI', ML + 12 + doc.getTextWidth('DATUM'), 13.5)
+    doc.text('LUMIN', ML + 12, 13.5)
+    doc.setTextColor(...C.s300); doc.text('.AI', ML + 12 + doc.getTextWidth('LUMIN'), 13.5)
     doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(...C.s500)
     doc.text(filename, PW - MR, 11, { align: 'right' })
     doc.text(dateStr, PW - MR, 15, { align: 'right' })
@@ -100,7 +100,7 @@ function drawFooter(doc, pageNum, totalPages) {
     drawChromeLine(doc, ML, fy, CW)
     doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(...C.s500)
     doc.text(`${pageNum} / ${totalPages}`, PW / 2, fy + 6, { align: 'center' })
-    doc.text('DATUM.AI Summary Report', ML, fy + 6)
+    doc.text('LUMIN.AI Summary Report', ML, fy + 6)
 }
 
 function initPage(doc, filename, dateStr) {
