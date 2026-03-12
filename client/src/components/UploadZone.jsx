@@ -2,6 +2,8 @@ import { useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../store'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 export default function UploadZone() {
     const { uploadStatus, uploadError, metadata, setSession, setEDA, setUploadStatus, clearAll } = useStore()
     const [isDragging, setIsDragging] = useState(false)
@@ -23,7 +25,7 @@ export default function UploadZone() {
                 const formData = new FormData()
                 formData.append('file', file)
 
-                const uploadRes = await fetch('/upload', { method: 'POST', body: formData })
+                const uploadRes = await fetch(`${API_BASE_URL}/upload`, { method: 'POST', body: formData })
                 if (!uploadRes.ok) {
                     const err = await uploadRes.json()
                     throw new Error(err.error || 'Upload failed')
@@ -33,7 +35,7 @@ export default function UploadZone() {
 
                 setUploadStatus('processing')
 
-                const edaRes = await fetch('/eda', {
+                const edaRes = await fetch(`${API_BASE_URL}/eda`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionId }),

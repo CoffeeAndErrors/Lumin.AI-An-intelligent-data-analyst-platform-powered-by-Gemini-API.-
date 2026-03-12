@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { useStore } from '../store'
 import ChartCard from './ChartCard'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 function parseMessageContent(raw, edaResults) {
     if (!raw) return { text: '', charts: [], suggest: null }
 
@@ -194,7 +196,7 @@ export default function ChatWithData() {
         try {
             const allMessages = [...messages, userMsg]
 
-            const res = await fetch('/chat', {
+            const res = await fetch(`${API_BASE_URL}/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, messages: allMessages }),

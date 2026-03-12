@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../store'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+
 const AUDIENCES = ['EXECUTIVE', 'TECHNICAL', 'GENERAL']
 const DEPTHS = ['Brief', 'Standard', 'Deep Dive']
 
@@ -32,7 +34,7 @@ export default function DataStory() {
         updateStory({ isStreaming: true, content: '', parsedSections: {}, generated: false })
 
         try {
-            const res = await fetch('/story', {
+            const res = await fetch(`${API_BASE_URL}/story`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, audience, depth }),
